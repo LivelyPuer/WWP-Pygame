@@ -5,6 +5,8 @@ from perlin_numpy import (
     generate_perlin_noise_2d, generate_fractal_noise_2d
 )
 
+import config
+
 
 class Map:
     mask: np.array
@@ -88,3 +90,5 @@ class ImageMap(Map):
 
 game_map = GenerateMap("fractal")
 game_map.set_image("data/images/img.jpg")
+
+screen_bound = pygame.Rect(0, 0, config.height, config.height)
