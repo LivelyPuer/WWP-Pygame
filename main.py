@@ -5,7 +5,7 @@ import pygame
 
 import config
 from map import game_map
-from player import GravityObject, Worm
+from player import Worm, Weapon, Bullet
 
 clock = pygame.time.Clock()
 click_time = 0
@@ -17,9 +17,16 @@ screen = pygame.display.set_mode((config.width, config.height))
 # Using blit to copy content from one surface to other
 is_pressed = [False, False]  # left, right
 game_map.draw_map(screen)
-
 worms = pygame.sprite.Group()
 o = Worm(100, 0, worms, pilot=(0.5, 0.5), can_control=True)
+
+is_shooting = True
+
+bullet_pool = pygame.sprite.Group()
+weapon_pool = pygame.sprite.Group()
+
+cur_weapon = Weapon(100, 100, o, None, weapon_pool)
+# bullet.is_visible = False
 
 while True:
     for event in pygame.event.get():
@@ -40,7 +47,11 @@ while True:
                 else:
                     clicked = True
                 click_time = time.time()
-
+            if event.key == pygame.K_SPACE:
+                for worm in worms.sprites():
+                    weapon_pool.sprites()[0].set_bullet(Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5)))
+                    print(bullet_pool)
+                    worm.shoot(5)
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 is_pressed[0] = False
@@ -61,8 +72,20 @@ while True:
             worm.jump()
         clicked = False
     game_map.draw_map(screen)
+
     worms.draw(screen)
     worms.update()
+
+    weapon_pool.draw(screen)
+    weapon_pool.update()
+    for bul in bullet_pool.sprites():
+        if bul.is_visible:
+            bullet_pool.draw(screen)
+            bullet_pool.update()
+            break
+
+
+
     clock.tick(config.fps)
     pygame.display.flip()
     pygame.display.update()

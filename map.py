@@ -40,7 +40,6 @@ class Map:
         self.back_image = cv2.transpose(cv2.resize(cv2.imread(image_path)[..., ::-1], self.size))
 
     def remove_circle(self, x, y, radius):
-        print("remove")
         xx = np.arange(self.mask.shape[0])
         yy = np.arange(self.mask.shape[1])
         val = [[x, y], radius]
@@ -91,4 +90,4 @@ class ImageMap(Map):
 game_map = GenerateMap("fractal")
 game_map.set_image("data/images/img.jpg")
 
-screen_bound = pygame.Rect(0, 0, config.height, config.height)
+screen_bound = pygame.Rect(0, 0, config.width, config.height)

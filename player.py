@@ -1,3 +1,5 @@
+import math
+
 import pygame
 from pygame import Color
 
@@ -5,24 +7,23 @@ import config
 from map import game_map, screen_bound
 from resources import load_image
 
+tmp_group = pygame.sprite.Group()
+
 
 class Object(pygame.sprite.Sprite):
-    can_control = False
-    is_visible = False
-    image = load_image("default.png")
-    float_position = [0, 0]
 
     def in_bounds(self):
         return screen_bound.contains(self.rect)
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), can_control=False):
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0)):
         super().__init__(*group)
         self.image = load_image(sprite)
         self.pilot = pilot
         self.rect = self.image.get_rect()
+        self.float_position = [0, 0]
         self.float_position[0] = x - self.image.get_width() * pilot[0]
         self.float_position[1] = y - self.image.get_height() * pilot[1]
-        self.can_control = can_control
+        self.is_visible = True
         self.update_rect()
 
     def moveto(self, x, y):
@@ -34,7 +35,8 @@ class Object(pygame.sprite.Sprite):
         self.float_position[1] += dy
 
     def update(self):
-        self.update_rect()
+        if self.is_visible:
+            self.update_rect()
 
     def update_rect(self):
         self.rect.x = round(self.float_position[0])
@@ -45,15 +47,15 @@ class Object(pygame.sprite.Sprite):
 
 
 class AnimatedObject(Object):
-    hash_anim = {}
-    state = "default"
-    animation = {"default": ["default16x16.png"]}
-    cur_duration = 0
-    frame_duration = 30
-    state_count = 0
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), can_control=False):
-        super().__init__(x, y, *group, sprite="default.png", pilot=(0, 0), can_control=False)
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0)):
+        super().__init__(x, y, *group, sprite=sprite, pilot=pilot)
+        self.hash_anim = {}
+        self.state = "default"
+        self.animation = {"default": ["default16x16.png"]}
+        self.cur_duration = 0
+        self.frame_duration = 30
+        self.state_count = 0
 
     def animate(self):
         pass
@@ -69,17 +71,18 @@ class AnimatedObject(Object):
 
 
 class GravityObject(Object):
-    falling_speed = 0
-    is_move = False
 
     def __init__(self, x, y, *group, sprite="default.png", **kwargs):
         super().__init__(x, y, *group, sprite=sprite)
+        self.falling_speed = 0
+        self.is_move = False
 
     def update(self):
         super().update()
         self.falling()
 
     def falling(self):
+
         if not self.on_ground():
             self.falling_speed -= config.gravity / config.fps
         else:
@@ -89,14 +92,11 @@ class GravityObject(Object):
         self.simple_move(0, self.falling_speed)
 
     def physics_move(self, dx, dy):
-        if dx > 0 and game_map.can_move_right(self.rect) or dx < 0 and game_map.can_move_left(
-                self.rect) and self.in_bounds():
+        if (dx > 0 and game_map.can_move_right(self.rect) or dx < 0 and game_map.can_move_left(
+                self.rect)) and self.in_bounds():
             self.float_position[0] += dx
             self.update_rect()
             self.is_move = True
-            if game_map.check_ground_top(self.rect):
-                self.float_position[0] -= dx
-                self.update_rect()
 
         self.float_position[1] += dy
 
@@ -104,29 +104,100 @@ class GravityObject(Object):
         return game_map.check_on_ground(self.rect)
 
 
-class Worm(AnimatedObject, GravityObject):
-    is_jump = False
-    forward_jumping = False
-    back_jumping = False
-    direction = 1  # -1 - left, 1 - right
-    jump_force = 2
-    back_jump_force = 5
-    state = "idle"
-    animation = {"idle": ["animations/idle_walk1.png"],
-                 "walk": ["animations/idle_walk1.png", "animations/walk2.png"],
-                 "forward_jump": ["animations/forward_jump.png"],
-                 "back_jump": ["animations/back_jump1.png", "animations/back_jump2.png",
-                               "animations/back_jump3.png", "animations/back_jump4.png",
-                               "animations/back_jump5.png"],
-                 "deathing": ["animations/deathing1.png", "animations/deathing2.png"],
-                 "falling": ["animations/falling.png"],
-                 "attacking": ["animations/attacking.png"],
-                 "rip": ["animations/rip1.png", "animations/rip2.png",
-                         "animations/rip3.png", "animations/rip4.png"]}
+class Bullet(GravityObject):
+    def __init__(self, x, y, *group, sprite="default.png", radius=25, ground_contact=True, **kwargs):
+        super().__init__(x, y, *group, sprite=sprite, **kwargs)
+        self.radius = radius
+        self.is_visible = True
+        self.ground_contact = ground_contact
 
-    def __init__(self, x, y, *group, sprite=animation["idle"][0], **kwargs):
+        self.active = False
+        self.horizontal_speed = 5
+        self.direction = 1
+
+    def update(self):
+        if self.is_visible:
+            self.physics_move(self.horizontal_speed, 0)
+            if self.ground_contact and self.on_ground():
+                self.explosion()
+            super().update()
+
+    def shoot(self, speed, angle):
+        self.is_visible = True
+        self.active = True
+        self.falling_speed = -speed * math.sin(math.radians(angle))
+        self.horizontal_speed = speed * math.cos(math.radians(angle))
+        print(self.falling_speed, self.horizontal_speed)
+
+    def explosion(self):
+        print("Expolosion")
+        game_map.remove_circle(*self.rect.center, self.radius)
+        self.kill()
+        del self
+
+
+class Weapon(Object):
+    def __init__(self, x, y, worm, bullet, *group, sprite="default.png", pilot=(0, 0)):
+        super().__init__(x, y, *group, sprite="default.png", pilot=(0, 0))
+        self.bullet = bullet
+        self.worm = worm
+        self.angle = 45
+        self.worm.weapon = self
+
+    def set_bullet(self, bullet):
+        self.bullet = bullet
+        self.bullet.float_position[0] = self.worm.float_position[0]
+        self.bullet.float_position[1] = self.worm.float_position[1]
+        self.bullet.update_rect()
+
+    def update(self):
+        # print(self.worm.rect.x)
+        self.float_position[0] = self.worm.rect.x
+        self.float_position[1] = self.worm.rect.y
+        super().update()
+
+    def shoot(self, speed):
+        self.bullet.moveto(self.worm.rect.x, self.worm.rect.y)
+        self.bullet.shoot(speed, self.angle)
+
+    def set_angle(self, angle):
+        self.angle = angle
+
+    def turn(self, angle):
+        self.angle += angle
+        if self.angle > 90:
+            self.angle -= angle
+        elif self.angle < -90:
+            self.angle += angle
+
+
+class Worm(AnimatedObject, GravityObject):
+
+    def __init__(self, x, y, *group, sprite="default16x16.png", can_control=True, **kwargs):
+        super().__init__(x, y, *group, sprite=sprite, **kwargs)
         super(GravityObject, self).__init__(x, y, *group, sprite=sprite, **kwargs)
         self.state = "idle"
+        self.can_control = can_control
+
+        self.weapon = None
+        self.is_jump = False
+        self.forward_jumping = False
+        self.back_jumping = False
+        self.direction = 1  # -1 - left, 1 - right
+        self.jump_force = 2
+        self.back_jump_force = 5
+        self.state = "idle"
+        self.animation = {"idle": ["animations/idle_walk1.png"],
+                          "walk": ["animations/idle_walk1.png", "animations/walk2.png"],
+                          "forward_jump": ["animations/forward_jump.png"],
+                          "back_jump": ["animations/back_jump1.png", "animations/back_jump2.png",
+                                        "animations/back_jump3.png", "animations/back_jump4.png",
+                                        "animations/back_jump5.png"],
+                          "deathing": ["animations/deathing1.png", "animations/deathing2.png"],
+                          "falling": ["animations/falling.png"],
+                          "attacking": ["animations/attacking.png"],
+                          "rip": ["animations/rip1.png", "animations/rip2.png",
+                                  "animations/rip3.png", "animations/rip4.png"]}
 
     def jump(self):
         if self.on_ground():
@@ -139,6 +210,10 @@ class Worm(AnimatedObject, GravityObject):
             self.falling_speed = -self.back_jump_force
             self.is_jump = True
             self.back_jumping = True
+
+    def shoot(self, speed):
+        self.weapon.shoot(speed)
+        print("shoot worm")
 
     def falling(self):
         if not self.on_ground():
@@ -218,6 +293,7 @@ class Worm(AnimatedObject, GravityObject):
     def physics_move(self, dx, dy, jump=False):
         if self.state == "falling" and not self.forward_jumping:
             return
+
         if not self.back_jumping and not self.forward_jumping:
             self.direction = 1 if dx > 0 else -1
 
@@ -227,9 +303,9 @@ class Worm(AnimatedObject, GravityObject):
                 pass
             else:
                 super().physics_move(dx * 0.5, dy)
+
         elif jump and self.forward_jumping or not jump and not self.forward_jumping:
             super().physics_move(dx, dy)
-        print(self.direction, self.back_jumping, self.forward_jumping)
 
 
 class Team:
