@@ -20,27 +20,28 @@ class Object(pygame.sprite.Sprite):
         self.image = load_image(sprite)
         self.pilot = pilot
         self.rect = self.image.get_rect()
-        self.float_position = [0, 0]
-        self.float_position[0] = x - self.image.get_width() * pilot[0]
-        self.float_position[1] = y - self.image.get_height() * pilot[1]
+        self.float_position = pygame.Vector2(0, 0)
+        self.float_position.x = x - self.image.get_width() * pilot[0]
+        self.float_position.y = y - self.image.get_height() * pilot[1]
         self.is_visible = True
         self.update_rect()
 
     def moveto(self, x, y):
-        self.float_position[0] = x - self.image.get_width() * self.pilot[0]
-        self.float_position[1] = y - self.image.get_height() * self.pilot[1]
+        self.float_position.x = x - self.image.get_width() * self.pilot[0]
+        self.float_position.y = y - self.image.get_height() * self.pilot[1]
 
     def simple_move(self, dx, dy):
-        self.float_position[0] += dx
-        self.float_position[1] += dy
+        self.float_position.x += dx
+        self.float_position.y += dy
 
     def update(self):
         if self.is_visible:
             self.update_rect()
 
     def update_rect(self):
-        self.rect.x = round(self.float_position[0])
-        self.rect.y = round(self.float_position[1])
+        self.rect.x = round(self.float_position.x)
+        self.rect.y = round(self.float_position.y)
+        # print(self.rect)
 
     def move(self, dx, dy):
         self.rect = self.rect.move(dx, dy)
@@ -51,8 +52,6 @@ class AnimatedObject(Object):
     def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0)):
         super().__init__(x, y, *group, sprite=sprite, pilot=pilot)
         self.hash_anim = {}
-        self.state = "default"
-        self.animation = {"default": ["default16x16.png"]}
         self.cur_duration = 0
         self.frame_duration = 30
         self.state_count = 0
@@ -94,14 +93,18 @@ class GravityObject(Object):
     def physics_move(self, dx, dy):
         if (dx > 0 and game_map.can_move_right(self.rect) or dx < 0 and game_map.can_move_left(
                 self.rect)) and self.in_bounds():
-            self.float_position[0] += dx
+            self.float_position.x += dx
+            print(self.float_position)
             self.update_rect()
             self.is_move = True
 
-        self.float_position[1] += dy
+        self.float_position.y += dy
 
     def on_ground(self) -> bool:
         return game_map.check_on_ground(self.rect)
+
+    def check_ground_contact(self):
+        return game_map.check_in_ground_around(self.rect) or game_map.check_on_ground_around(self.rect)
 
 
 class Bullet(GravityObject):
@@ -118,16 +121,19 @@ class Bullet(GravityObject):
     def update(self):
         if self.is_visible:
             self.physics_move(self.horizontal_speed, 0)
-            if self.ground_contact and self.on_ground():
+            if self.check_ground_contact():
                 self.explosion()
             super().update()
+        if not self.in_bounds():
+            self.kill()
+            del self
 
     def shoot(self, speed, angle):
         self.is_visible = True
         self.active = True
         self.falling_speed = -speed * math.sin(math.radians(angle))
         self.horizontal_speed = speed * math.cos(math.radians(angle))
-        print(self.falling_speed, self.horizontal_speed)
+        # print(self.falling_speed, self.horizontal_speed)
 
     def explosion(self):
         print("Expolosion")
@@ -146,14 +152,14 @@ class Weapon(Object):
 
     def set_bullet(self, bullet):
         self.bullet = bullet
-        self.bullet.float_position[0] = self.worm.float_position[0]
-        self.bullet.float_position[1] = self.worm.float_position[1]
+        self.bullet.float_position.x = self.worm.float_position.x
+        self.bullet.float_position.y = self.worm.float_position.y
         self.bullet.update_rect()
 
     def update(self):
         # print(self.worm.rect.x)
-        self.float_position[0] = self.worm.rect.x
-        self.float_position[1] = self.worm.rect.y
+        self.float_position.x = self.worm.rect.x
+        self.float_position.y = self.worm.rect.y
         super().update()
 
     def shoot(self, speed):
@@ -174,9 +180,7 @@ class Weapon(Object):
 class Worm(AnimatedObject, GravityObject):
 
     def __init__(self, x, y, *group, sprite="default16x16.png", can_control=True, **kwargs):
-        super().__init__(x, y, *group, sprite=sprite, **kwargs)
         super(GravityObject, self).__init__(x, y, *group, sprite=sprite, **kwargs)
-        self.state = "idle"
         self.can_control = can_control
 
         self.weapon = None
@@ -198,6 +202,7 @@ class Worm(AnimatedObject, GravityObject):
                           "attacking": ["animations/attacking.png"],
                           "rip": ["animations/rip1.png", "animations/rip2.png",
                                   "animations/rip3.png", "animations/rip4.png"]}
+        super().__init__(x, y, *group, sprite=self.animation[self.state][0], **kwargs)
 
     def jump(self):
         if self.on_ground():
