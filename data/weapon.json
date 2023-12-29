@@ -1,0 +1,15 @@
+{
+  "weapons": {
+    "bazooka": {
+      "sprite": "guns/bazooka.png",
+      "pilot": [11, 7],
+      "pixel_pilot": true,
+      "bullet": {
+        "sprite": "bullet/bazooka.png",
+        "pilot": [0.5, 0.5],
+        "pixel_pilot": false,
+        "ground_contact": true
+      }
+    }
+  }
+}

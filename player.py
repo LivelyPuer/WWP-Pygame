@@ -15,20 +15,24 @@ class Object(pygame.sprite.Sprite):
     def in_bounds(self):
         return screen_bound.contains(self.rect)
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0)):
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False):
         super().__init__(*group)
         self.image = load_image(sprite)
+        self.pilot_pixel = pilot_pixel
         self.pilot = pilot
         self.rect = self.image.get_rect()
         self.float_position = pygame.Vector2(0, 0)
-        self.float_position.x = x - self.image.get_width() * pilot[0]
-        self.float_position.y = y - self.image.get_height() * pilot[1]
+        self.moveto(x, y)
         self.is_visible = True
         self.update_rect()
 
     def moveto(self, x, y):
-        self.float_position.x = x - self.image.get_width() * self.pilot[0]
-        self.float_position.y = y - self.image.get_height() * self.pilot[1]
+        if not self.pilot_pixel:
+            self.float_position.x = x - self.image.get_width() * self.pilot[0]
+            self.float_position.y = y - self.image.get_height() * self.pilot[1]
+        else:
+            self.float_position.x = x - self.pilot[0]
+            self.float_position.y = y - self.pilot[1]
 
     def simple_move(self, dx, dy):
         self.float_position.x += dx
@@ -49,8 +53,8 @@ class Object(pygame.sprite.Sprite):
 
 class AnimatedObject(Object):
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0)):
-        super().__init__(x, y, *group, sprite=sprite, pilot=pilot)
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False):
+        super().__init__(x, y, *group, sprite=sprite, pilot=pilot, pilot_pixel=pilot_pixel)
         self.hash_anim = {}
         self.cur_duration = 0
         self.frame_duration = 30
@@ -72,7 +76,7 @@ class AnimatedObject(Object):
 class GravityObject(Object):
 
     def __init__(self, x, y, *group, sprite="default.png", **kwargs):
-        super().__init__(x, y, *group, sprite=sprite)
+        super().__init__(x, y, *group, sprite=sprite, **kwargs)
         self.falling_speed = 0
         self.is_move = False
 
@@ -94,7 +98,6 @@ class GravityObject(Object):
         if (dx > 0 and game_map.can_move_right(self.rect) or dx < 0 and game_map.can_move_left(
                 self.rect)) and self.in_bounds():
             self.float_position.x += dx
-            print(self.float_position)
             self.update_rect()
             self.is_move = True
 
@@ -143,38 +146,48 @@ class Bullet(GravityObject):
 
 
 class Weapon(Object):
-    def __init__(self, x, y, worm, bullet, *group, sprite="default.png", pilot=(0, 0)):
-        super().__init__(x, y, *group, sprite="default.png", pilot=(0, 0))
+    def __init__(self, x, y, worm, bullet, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False):
+        super().__init__(x, y, *group, sprite=sprite, pilot=pilot, pilot_pixel=pilot_pixel)
         self.bullet = bullet
+        self.source_image = load_image(sprite)
         self.worm = worm
-        self.angle = 45
         self.worm.weapon = self
 
     def set_bullet(self, bullet):
         self.bullet = bullet
-        self.bullet.float_position.x = self.worm.float_position.x
-        self.bullet.float_position.y = self.worm.float_position.y
+        self.moveto(self.worm.float_position.x + self.worm.weapon_pilot[0],
+                    self.worm.float_position.y + self.worm.weapon_pilot[1])
         self.bullet.update_rect()
 
     def update(self):
         # print(self.worm.rect.x)
-        self.float_position.x = self.worm.rect.x
-        self.float_position.y = self.worm.rect.y
+        self.moveto(self.worm.float_position.x + self.worm.weapon_pilot[0],
+                    self.worm.float_position.y + self.worm.weapon_pilot[1])
+        if self.worm.direction == 1:
+            self.image = pygame.transform.rotate(self.source_image, angle=self.worm.angle)
+        else:
+            self.image = pygame.transform.flip(self.source_image, True, False)
+            self.image = pygame.transform.rotate(self.image, angle=180 - self.worm.angle)
         super().update()
 
     def shoot(self, speed):
-        self.bullet.moveto(self.worm.rect.x, self.worm.rect.y)
-        self.bullet.shoot(speed, self.angle)
 
-    def set_angle(self, angle):
-        self.angle = angle
-
-    def turn(self, angle):
-        self.angle += angle
-        if self.angle > 90:
-            self.angle -= angle
-        elif self.angle < -90:
-            self.angle += angle
+        self.bullet.moveto(self.rect.x + self.image.get_width() * self.pilot[0],
+                           self.rect.y + self.image.get_height() * self.pilot[1])
+        if self.worm.direction == 1:
+            self.bullet.moveto(
+                self.rect.x + self.image.get_width() * self.pilot[0] + ((self.image.get_width() / 2) + 2) * math.cos(
+                    math.radians(self.worm.angle)),
+                self.rect.y + self.image.get_height() * self.pilot[1] - ((self.image.get_width() / 2) + 2) * math.sin(
+                    math.radians(self.worm.angle)))
+            self.bullet.shoot(speed, self.worm.angle)
+        else:
+            self.bullet.moveto(
+                self.rect.x + self.image.get_width() * self.pilot[0] + ((self.image.get_width() / 2) + 2) * math.cos(
+                    math.radians(180 - self.worm.angle)),
+                self.rect.y + self.image.get_height() * self.pilot[1] - ((self.image.get_width() / 2) + 2) * math.sin(
+                    math.radians(180 - self.worm.angle)))
+            self.bullet.shoot(speed, 180 - self.worm.angle)
 
 
 class Worm(AnimatedObject, GravityObject):
@@ -182,7 +195,8 @@ class Worm(AnimatedObject, GravityObject):
     def __init__(self, x, y, *group, sprite="default16x16.png", can_control=True, **kwargs):
         super(GravityObject, self).__init__(x, y, *group, sprite=sprite, **kwargs)
         self.can_control = can_control
-
+        self.angle = 45
+        self.weapon_pilot = (9, 10)
         self.weapon = None
         self.is_jump = False
         self.forward_jumping = False
@@ -191,7 +205,7 @@ class Worm(AnimatedObject, GravityObject):
         self.jump_force = 2
         self.back_jump_force = 5
         self.state = "idle"
-        self.animation = {"idle": ["animations/idle_walk1.png"],
+        self.animation = {"idle": ["animations/attacking.png"],
                           "walk": ["animations/idle_walk1.png", "animations/walk2.png"],
                           "forward_jump": ["animations/forward_jump.png"],
                           "back_jump": ["animations/back_jump1.png", "animations/back_jump2.png",
@@ -203,6 +217,15 @@ class Worm(AnimatedObject, GravityObject):
                           "rip": ["animations/rip1.png", "animations/rip2.png",
                                   "animations/rip3.png", "animations/rip4.png"]}
         super().__init__(x, y, *group, sprite=self.animation[self.state][0], **kwargs)
+
+    def set_angle(self, angle):
+        self.angle = angle
+
+    def turn(self, angle):
+        self.angle += angle
+        if self.angle > 90 or self.angle < -90:
+            self.angle -= angle
+        print(self.angle)
 
     def jump(self):
         if self.on_ground():
@@ -257,6 +280,7 @@ class Worm(AnimatedObject, GravityObject):
             self.state = "walk"
         elif self.state != "idle" and not self.is_move and not self.forward_jumping and not self.back_jumping:
             self.state = "idle"
+            self.weapon.is_visible = True
             self.flip_by_direction(self.animation[self.state][0])
         elif self.forward_jumping:
             self.state = "forward_jump"
@@ -275,6 +299,8 @@ class Worm(AnimatedObject, GravityObject):
             self.cur_duration = self.frame_duration
 
         self.image = pygame.transform.flip(self.image, True, False)
+        if self.state != "idle":
+            self.weapon.is_visible = False
 
     def flip_by_direction(self, name, flip=False):
         if not flip:
