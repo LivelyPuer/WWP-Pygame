@@ -15,14 +15,12 @@ pygame.init()
 
 camera_pos = pygame.Vector2(-1024, -576 * 2)
 start_pos = pygame.Vector2(0, 0)
-
 pressed_mouse = [False, False, False]  # left, middle, right
 
 screen = pygame.display.set_mode((config.width, config.height))
-surface = pygame.Surface((config.map_width, config.map_width))
-
+surface = pygame.Surface((config.map_width, config.map_height))
 # Using blit to copy content from one surface to other
-is_pressed = [False, False, False, False]  # left, right, up, down
+is_pressed = [False, False, False, False, False]  # left, right, up, down, space
 game_map.draw_map(surface)
 worms = pygame.sprite.Group()
 o = Worm(1124, 1152, worms, pilot=(8, 8), can_control=True, pilot_pixel=True)
@@ -60,8 +58,9 @@ while True:
                 click_time = time.time()
             if event.key == pygame.K_SPACE:
                 for worm in worms.sprites():
-                    weapon_pool.sprites()[0].set_bullet(Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5), sprite="bullet/bazooka.png"))
-                    worm.shoot(15)
+                    weapon_pool.sprites()[0].set_bullet(
+                        Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5), sprite="bullet/bazooka.png"))
+                    worm.shoot(10)
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 is_pressed[0] = False
@@ -126,7 +125,6 @@ while True:
     if camera_pos.y > config.camera_bounds[3]:
         camera_pos.y = config.camera_bounds[3]
 
-    # if camera_pos.x < camera_bounds
     screen.blit(surface, camera_pos)
     clock.tick(config.fps)
     pygame.display.flip()

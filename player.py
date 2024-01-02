@@ -4,6 +4,7 @@ import pygame
 from pygame import Color
 
 import config
+import numpy as np
 from map import game_map, screen_bound
 from resources import load_image
 
@@ -116,7 +117,7 @@ class Bullet(GravityObject):
         self.radius = radius
         self.is_visible = True
         self.ground_contact = ground_contact
-
+        self.source_image = load_image(sprite)
         self.active = False
         self.horizontal_speed = 5
         self.direction = 1
@@ -126,6 +127,7 @@ class Bullet(GravityObject):
             self.physics_move(self.horizontal_speed, 0)
             if self.check_ground_contact():
                 self.explosion()
+            self.angle_bullet()
             super().update()
         if not self.in_bounds():
             self.kill()
@@ -137,6 +139,12 @@ class Bullet(GravityObject):
         self.falling_speed = -speed * math.sin(math.radians(angle))
         self.horizontal_speed = speed * math.cos(math.radians(angle))
         # print(self.falling_speed, self.horizontal_speed)
+
+    def angle_bullet(self):
+        vect = pygame.Vector2(self.horizontal_speed, self.falling_speed)
+        print(np.sign(self.falling_speed) * math.degrees(math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
+        self.image = pygame.transform.rotate(self.source_image,
+                                             -np.sign(self.falling_speed) * math.degrees(math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
 
     def explosion(self):
         print("Expolosion")

@@ -2,6 +2,8 @@ fps = 60
 height = 576
 width = 1024
 
+gen_map_size = (1024, 576)
+
 map_height = height * 3
 map_width = width * 3
 
