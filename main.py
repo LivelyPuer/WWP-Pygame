@@ -9,9 +9,11 @@ from map import game_map
 from player import Worm, Weapon, Bullet
 
 clock = pygame.time.Clock()
-click_time = 0
-clicked = False
+jump_click_time = 0
+jump_clicked = False
 
+shoot_press_time = 0
+shoot = False
 pygame.init()
 
 camera_pos = pygame.Vector2(-1024, -576 * 2)
@@ -30,7 +32,6 @@ o3 = Worm(1624, 1152, worms, pilot=(8, 8), can_control=False, pilot_pixel=True)
 team = itertools.cycle([o1, o2, o3])
 active_worm = next(team)
 active_worm.can_control = True
-
 is_shooting = True
 
 bullet_pool = pygame.sprite.Group()
@@ -61,18 +62,18 @@ while True:
                 cur_weapon = Weapon(100, 100, active_worm, None, weapon_pool, pilot=(0.5, 0.5), sprite="guns/bazooka.png")
                 active_worm.can_control = True
             if event.key == pygame.K_RETURN:
-                if time.time() - click_time < 0.2:
+                if time.time() - jump_click_time < 0.2:
                     for worm in worms.sprites():
                         worm.back_jump()
-                    clicked = False
+                    jump_clicked = False
                 else:
-                    clicked = True
-                click_time = time.time()
+                    jump_clicked = True
+                jump_click_time = time.time()
             if event.key == pygame.K_SPACE:
-                for worm in worms.sprites():
-                    weapon_pool.sprites()[0].set_bullet(
-                        Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5), sprite="bullet/bazooka.png"))
-                    worm.shoot(10)
+                is_pressed[4] = True
+                shoot = False
+                shoot_press_time = time.time()
+
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 is_pressed[0] = False
@@ -82,6 +83,14 @@ while True:
                 is_pressed[2] = False
             if event.key == pygame.K_DOWN:
                 is_pressed[3] = False
+            if event.key == pygame.K_SPACE:
+                is_pressed[4] = False
+                if not shoot:
+                    for worm in worms.sprites():
+                        if worm.can_control and worm.state == "idle":
+                            weapon_pool.sprites()[0].set_bullet(
+                                Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5), sprite="bullet/bazooka.png"))
+                            worm.shoot(10 * (time.time() - shoot_press_time))
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 start_pos = pygame.Vector2(pygame.mouse.get_pos())
@@ -106,11 +115,20 @@ while True:
     if is_pressed[3]:
         for w in worms.sprites():
             w.turn(-1)
+    if is_pressed[4]:
+        if time.time() - shoot_press_time >= 1:
+            for worm in worms.sprites():
+                if worm.can_control and worm.state == "idle":
+                    weapon_pool.sprites()[0].set_bullet(
+                        Bullet(0, 0, bullet_pool, pilot=(0.5, 0.5), sprite="bullet/bazooka.png"))
+                    worm.shoot(10)
+                    is_pressed[4] = False
+                    shoot = True
 
-    if clicked and time.time() - click_time > 0.2:
+    if jump_clicked and time.time() - jump_click_time > 0.2:
         for worm in worms.sprites():
             worm.jump()
-        clicked = False
+        jump_clicked = False
     game_map.draw_map(surface)
 
     worms.draw(surface)

@@ -142,8 +142,6 @@ class Bullet(GravityObject):
 
     def angle_bullet(self):
         vect = pygame.Vector2(self.horizontal_speed, self.falling_speed)
-        print(np.sign(self.falling_speed) * math.degrees(
-            math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
         self.image = pygame.transform.rotate(self.source_image,
                                              -np.sign(self.falling_speed) * math.degrees(math.acos(
                                                  (vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
@@ -236,7 +234,6 @@ class Worm(AnimatedObject, GravityObject):
             self.angle += angle
             if self.angle > 90 or self.angle < -90:
                 self.angle -= angle
-            print(self.angle)
 
     def jump(self):
         if self.can_control and self.on_ground():
@@ -253,7 +250,6 @@ class Worm(AnimatedObject, GravityObject):
     def shoot(self, speed):
         if self.can_control:
             self.weapon.shoot(speed)
-            print("shoot worm")
 
     def falling(self):
         if not self.on_ground():
