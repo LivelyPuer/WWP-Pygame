@@ -76,7 +76,7 @@ class Weapon(Object):
             self.image = pygame.transform.rotate(self.source_image, angle=self.worm.angle)
         else:
             self.image = pygame.transform.flip(self.source_image, True, False)
-            self.image = pygame.transform.rotate(self.image, angle=180 - self.worm.angle)
+            self.image = pygame.transform.rotate(self.image, angle=self.worm.direction * self.worm.angle)
         super().update()
 
     def shoot(self, speed):
