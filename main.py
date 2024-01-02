@@ -1,3 +1,4 @@
+import itertools
 import sys
 import time
 
@@ -23,14 +24,19 @@ surface = pygame.Surface((config.map_width, config.map_height))
 is_pressed = [False, False, False, False, False]  # left, right, up, down, space
 game_map.draw_map(surface)
 worms = pygame.sprite.Group()
-o = Worm(1124, 1152, worms, pilot=(8, 8), can_control=True, pilot_pixel=True)
+o1 = Worm(1124, 1152, worms, pilot=(8, 8), can_control=False, pilot_pixel=True)
+o2 = Worm(1324, 1152, worms, pilot=(8, 8), can_control=False, pilot_pixel=True)
+o3 = Worm(1624, 1152, worms, pilot=(8, 8), can_control=False, pilot_pixel=True)
+team = itertools.cycle([o1, o2, o3])
+active_worm = next(team)
+active_worm.can_control = True
 
 is_shooting = True
 
 bullet_pool = pygame.sprite.Group()
 weapon_pool = pygame.sprite.Group()
 
-cur_weapon = Weapon(100, 100, o, None, weapon_pool, pilot=(0.5, 0.5), sprite="guns/bazooka.png")
+cur_weapon = Weapon(100, 100, active_worm, None, weapon_pool, pilot=(0.5, 0.5), sprite="guns/bazooka.png")
 # bullet.is_visible = False
 
 while True:
@@ -48,6 +54,12 @@ while True:
                 is_pressed[2] = True
             if event.key == pygame.K_DOWN:
                 is_pressed[3] = True
+            if event.key == pygame.K_TAB:
+                active_worm.can_control = False
+                cur_weapon.kill()
+                active_worm = next(team)
+                cur_weapon = Weapon(100, 100, active_worm, None, weapon_pool, pilot=(0.5, 0.5), sprite="guns/bazooka.png")
+                active_worm.can_control = True
             if event.key == pygame.K_RETURN:
                 if time.time() - click_time < 0.2:
                     for worm in worms.sprites():
@@ -84,10 +96,10 @@ while True:
 
     if is_pressed[0]:
         for worm in worms.sprites():
-            worm.physics_move(-0.7, 0)
+            worm.player_move(-0.7, 0)
     if is_pressed[1]:
         for worm in worms.sprites():
-            worm.physics_move(+0.7, 0)
+            worm.player_move(+0.7, 0)
     if is_pressed[2]:
         for w in worms.sprites():
             w.turn(1)

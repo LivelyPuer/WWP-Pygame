@@ -1,10 +1,10 @@
 import math
 
+import numpy as np
 import pygame
 from pygame import Color
 
 import config
-import numpy as np
 from map import game_map, screen_bound
 from resources import load_image
 
@@ -142,9 +142,11 @@ class Bullet(GravityObject):
 
     def angle_bullet(self):
         vect = pygame.Vector2(self.horizontal_speed, self.falling_speed)
-        print(np.sign(self.falling_speed) * math.degrees(math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
+        print(np.sign(self.falling_speed) * math.degrees(
+            math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
         self.image = pygame.transform.rotate(self.source_image,
-                                             -np.sign(self.falling_speed) * math.degrees(math.acos((vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
+                                             -np.sign(self.falling_speed) * math.degrees(math.acos(
+                                                 (vect.x ** 2) / (math.sqrt(vect.x ** 2 + vect.y ** 2) * vect.x))))
 
     def explosion(self):
         print("Expolosion")
@@ -230,26 +232,28 @@ class Worm(AnimatedObject, GravityObject):
         self.angle = angle
 
     def turn(self, angle):
-        self.angle += angle
-        if self.angle > 90 or self.angle < -90:
-            self.angle -= angle
-        print(self.angle)
+        if self.can_control:
+            self.angle += angle
+            if self.angle > 90 or self.angle < -90:
+                self.angle -= angle
+            print(self.angle)
 
     def jump(self):
-        if self.on_ground():
+        if self.can_control and self.on_ground():
             self.falling_speed = -self.jump_force
             self.is_jump = True
             self.forward_jumping = True
 
     def back_jump(self):
-        if self.on_ground():
+        if self.can_control and self.on_ground():
             self.falling_speed = -self.back_jump_force
             self.is_jump = True
             self.back_jumping = True
 
     def shoot(self, speed):
-        self.weapon.shoot(speed)
-        print("shoot worm")
+        if self.can_control:
+            self.weapon.shoot(speed)
+            print("shoot worm")
 
     def falling(self):
         if not self.on_ground():
@@ -288,7 +292,8 @@ class Worm(AnimatedObject, GravityObject):
             self.state = "walk"
         elif self.state != "idle" and not self.is_move and not self.forward_jumping and not self.back_jumping:
             self.state = "idle"
-            self.weapon.is_visible = True
+            if self.can_control:
+                self.weapon.is_visible = True
             self.flip_by_direction(self.animation[self.state][0])
         elif self.forward_jumping:
             self.state = "forward_jump"
@@ -307,8 +312,9 @@ class Worm(AnimatedObject, GravityObject):
             self.cur_duration = self.frame_duration
 
         self.image = pygame.transform.flip(self.image, True, False)
-        if self.state != "idle":
-            self.weapon.is_visible = False
+        if self.can_control:
+            if self.state != "idle":
+                self.weapon.is_visible = False
 
     def flip_by_direction(self, name, flip=False):
         if not flip:
@@ -328,6 +334,10 @@ class Worm(AnimatedObject, GravityObject):
         if self.forward_jumping:
             self.physics_move(self.direction * 2, 0, jump=True)
         self.is_move = False
+
+    def player_move(self, dx, dy):
+        if self.can_control:
+            self.physics_move(dx, dy)
 
     def physics_move(self, dx, dy, jump=False):
         if self.state == "falling" and not self.forward_jumping:
