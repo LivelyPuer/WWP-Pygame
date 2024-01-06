@@ -6,6 +6,7 @@ from perlin_numpy import (
 )
 
 import config
+from map_editor.map_generator import Sin
 
 
 class Map:
@@ -89,7 +90,8 @@ class GenerateMap(Map):
         self.type_noise = self.types[type_noise]
         self.mask = np.zeros((config.map_width, config.map_height))
         self.mask[config.width:config.width * 2, config.height * 2:config.height * 3] = self.type_noise(self.size,
-                                                                                                        (4, 4))
+                                                                                                        (8, 8))
+        # self.mask[config.width:config.width * 2, config.height * 2:config.height * 3] = Sin(*self.size, 200).array
         mx, mn = np.max(self.mask), np.min(self.mask)
         for i in range(config.width, config.width * 2):
             for j in range(config.height * 2, config.height * 3):
@@ -104,7 +106,7 @@ class ImageMap(Map):
         super().__init__()
 
 
-game_map = GenerateMap("fractal")
+game_map = GenerateMap("perlin")
 game_map.set_image("data/images/img.jpg")
 
 screen_bound = pygame.Rect(0, 0, config.map_width, config.map_height)

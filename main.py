@@ -73,7 +73,7 @@ while True:
 
                 worm_marker.set_worm(active_worm)
                 shoot_marker.set_worm(active_worm)
-            if event.key == pygame.K_RETURN:
+            if event.key == pygame.K_RETURN and not is_pressed[4]:
                 if time.time() - jump_click_time < 0.2:
                     for worm in worms.sprites():
                         worm.back_jump()
@@ -81,7 +81,7 @@ while True:
                 else:
                     jump_clicked = True
                 jump_click_time = time.time()
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE and active_worm.state == "idle":
                 is_pressed[4] = True
                 shoot = False
                 shoot_press_time = time.time()
@@ -95,7 +95,7 @@ while True:
                 is_pressed[2] = False
             if event.key == pygame.K_DOWN:
                 is_pressed[3] = False
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE and active_worm.state == "idle":
                 is_pressed[4] = False
                 if not shoot:
                     for worm in worms.sprites():
@@ -114,7 +114,7 @@ while True:
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 pressed_mouse[0] = False
-    if is_pressed[4]:
+    if is_pressed[4] and active_worm.state == "idle":
         if time.time() - shoot_press_time >= 1:
             for worm in worms.sprites():
                 if worm.can_control and worm.state == "idle":
@@ -137,10 +137,10 @@ while True:
             for w in worms.sprites():
                 w.turn(-1)
 
-    if jump_clicked and time.time() - jump_click_time > 0.2:
-        for worm in worms.sprites():
-            worm.jump()
-        jump_clicked = False
+        if jump_clicked and time.time() - jump_click_time > 0.2:
+            for worm in worms.sprites():
+                worm.jump()
+            jump_clicked = False
     game_map.draw_map(surface)
 
     worms.update()
