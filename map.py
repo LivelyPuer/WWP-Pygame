@@ -6,7 +6,7 @@ from perlin_numpy import (
 )
 
 import config
-from map_editor.map_generator import Sin
+from map_editor.map_generator import small_island, two_islands
 
 
 class Map:
@@ -89,9 +89,9 @@ class GenerateMap(Map):
         super().__init__()
         self.type_noise = self.types[type_noise]
         self.mask = np.zeros((config.map_width, config.map_height))
-        self.mask[config.width:config.width * 2, config.height * 2:config.height * 3] = self.type_noise(self.size,
-                                                                                                        (8, 8))
-        # self.mask[config.width:config.width * 2, config.height * 2:config.height * 3] = Sin(*self.size, 200).array
+        print(self.type_noise(self.size, (8, 8)).shape)
+        print(small_island.generate(*self.size).shape)
+        self.mask[config.width:config.width * 2, config.height * 2:config.height * 3] = two_islands.generate(*self.size)
         mx, mn = np.max(self.mask), np.min(self.mask)
         for i in range(config.width, config.width * 2):
             for j in range(config.height * 2, config.height * 3):

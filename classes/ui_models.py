@@ -43,13 +43,11 @@ class WormMarker(WormTarget):
 class ShootMarker(WormTarget):
     def __init__(self, x, y, camera_pos, *group, sprite="shoot_marker.png", **kwargs):
         super().__init__(x, y, camera_pos, *group, sprite=sprite, **kwargs)
-        print(self.pilot)
 
     def update(self):
         if self.worm:
             vect = self.worm.get_pilot() + pygame.Vector2(-100, 0).rotate(
                 180 - self.worm.get_angle())
 
-            print(self.worm.get_pilot() - vect)
             self.set_by_screen_pos(vect.x, vect.y)
         super().update()
