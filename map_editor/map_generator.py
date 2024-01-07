@@ -6,6 +6,8 @@ import numpy as np
 from scipy import ndimage
 from skimage.transform import resize
 
+import config
+
 sys.setrecursionlimit(10000)
 funcs = {
     "small-island": lambda x, y, gen_size: y > gen_size[1] * 1.7 - (
@@ -72,7 +74,7 @@ class Noise:
 
         self.gen_size = width // 4, height // 4
         self.noise = generate_fractal_noise_2d((self.gen_size[0], self.gen_size[1]),
-                                               (self.gen_size[0] // 16, self.gen_size[1] // 16), octaves=1)
+                                               (config.width // 64, config.height // 64), octaves=1)
 
         self.res = np.zeros((self.gen_size[0], self.gen_size[1]))
 
@@ -98,7 +100,6 @@ class Noise:
                     self.res[i][j] = 1
 
         struct1 = ndimage.generate_binary_structure(2, 1)
-        structure = ndimage.generate_binary_structure(2, 2)
         self.res = ndimage.binary_dilation(self.res, structure=struct1, iterations=5)
         self.res = resize(self.res, (self.width, self.height))
         self.res = ndimage.median_filter(self.res, size=8)
