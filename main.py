@@ -81,7 +81,7 @@ while True:
                 else:
                     jump_clicked = True
                 jump_click_time = time.time()
-            if event.key == pygame.K_SPACE and active_worm.state == "idle":
+            if event.key == pygame.K_SPACE and (not active_worm.forward_jumping and not active_worm.back_jumping):
                 is_pressed[4] = True
                 shoot = False
                 shoot_press_time = time.time()
@@ -95,13 +95,13 @@ while True:
                 is_pressed[2] = False
             if event.key == pygame.K_DOWN:
                 is_pressed[3] = False
-            if event.key == pygame.K_SPACE and active_worm.state == "idle":
+            if event.key == pygame.K_SPACE and (not active_worm.forward_jumping and not active_worm.back_jumping):
                 is_pressed[4] = False
                 if not shoot:
                     for worm in worms.sprites():
                         if worm.can_control and worm.state == "idle":
                             weapon_pool.sprites()[0].set_bullet(
-                                Bullet(0, 0, bullet_pool, pilot=(0.5, 1), sprite="bullet/bazooka.png"))
+                                Bullet(0, 0, bullet_pool, radius=30, pilot=(0.5, 1), sprite="bullet/bazooka.png"))
                             worm.shoot(15 * (time.time() - shoot_press_time))
 
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -114,12 +114,12 @@ while True:
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 pressed_mouse[0] = False
-    if is_pressed[4] and active_worm.state == "idle":
+    if is_pressed[4] and (not active_worm.forward_jumping and not active_worm.back_jumping):
         if time.time() - shoot_press_time >= 1:
             for worm in worms.sprites():
-                if worm.can_control and worm.state == "idle":
+                if not shoot and worm.can_control and worm.state == "idle":
                     weapon_pool.sprites()[0].set_bullet(
-                        Bullet(0, 0, bullet_pool, pilot=(0.5, 1), sprite="bullet/bazooka.png"))
+                        Bullet(0, 0, bullet_pool, radius=30, pilot=(0.5, 1), sprite="bullet/bazooka.png"))
                     worm.shoot(15)
                     is_pressed[4] = False
                     shoot = True
@@ -168,7 +168,7 @@ while True:
         camera_pos.y = config.camera_bounds[3]
 
     screen.blit(surface, camera_pos)
-    if is_pressed[4]:
+    if not shoot and is_pressed[4] and (not active_worm.forward_jumping and not active_worm.back_jumping):
         for i in range(1, int((time.time() - shoot_press_time) * 100), 10):
             if i > 100:
                 break
