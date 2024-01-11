@@ -6,7 +6,7 @@ from perlin_numpy import (
 )
 
 import config
-from map_editor.map_generator import small_island, two_islands, box_island
+from map_editor.map_generator import small_island, box_island
 
 
 class Map:
@@ -78,6 +78,12 @@ class Map:
     def check_on_ground_around(self, rect: pygame.Rect) -> bool:
         # print(self.mask[rect.left - 1:rect.right + 1, rect.top - 1:rect.bottom + 1])
         return np.any(self.mask[rect.left - 1:rect.right + 1, rect.top - 1:rect.bottom + 1])
+
+    def check_block(self, x, y):
+        return self.mask[x][y] == 1
+
+    def invert_block(self, x, y):
+        self.mask[x][y] = -self.mask[x][y]
 
 
 class GenerateMap(Map):

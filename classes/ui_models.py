@@ -46,7 +46,7 @@ class ShootMarker(WormTarget):
 
     def update(self):
         if self.worm:
-            vect = self.worm.get_pilot() + pygame.Vector2(-100, 0).rotate(
+            vect = self.worm.rect.center + pygame.Vector2(-100, 0).rotate(
                 180 - self.worm.get_angle())
 
             self.set_by_screen_pos(vect.x, vect.y)

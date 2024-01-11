@@ -1,8 +1,9 @@
 {
   "weapons": {
     "bazooka": {
+      "class": "Weapon",
       "sprite": "guns/bazooka.png",
-      "pilot": [11, 7],
+      "pilot": [],
       "pixel_pilot": true,
       "bullet": {
         "sprite": "bullet/bazooka.png",

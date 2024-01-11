@@ -10,7 +10,7 @@ class Object(pygame.sprite.Sprite):
     def in_bounds(self):
         return screen_bound.contains(self.rect)
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False):
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False, **kwargs):
         super().__init__(*group)
         self.image = load_image(sprite)
         self.pilot_pixel = pilot_pixel
@@ -28,6 +28,7 @@ class Object(pygame.sprite.Sprite):
         else:
             self.float_position.x = x - self.pilot[0]
             self.float_position.y = y - self.pilot[1]
+        self.update_rect()
 
     def get_pilot(self):
         if not self.pilot_pixel:
@@ -39,6 +40,7 @@ class Object(pygame.sprite.Sprite):
     def simple_move(self, dx, dy):
         self.float_position.x += dx
         self.float_position.y += dy
+        self.update_rect()
 
     def update(self):
         if self.is_visible:
@@ -55,8 +57,8 @@ class Object(pygame.sprite.Sprite):
 
 class AnimatedObject(Object):
 
-    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False):
-        super().__init__(x, y, *group, sprite=sprite, pilot=pilot, pilot_pixel=pilot_pixel)
+    def __init__(self, x, y, *group, sprite="default.png", pilot=(0, 0), pilot_pixel=False, **kwargs):
+        super().__init__(x, y, *group, sprite=sprite, pilot=pilot, pilot_pixel=pilot_pixel, **kwargs)
         self.hash_anim = {}
         self.cur_duration = 0
         self.frame_duration = 30
@@ -77,14 +79,16 @@ class AnimatedObject(Object):
 
 class GravityObject(Object):
 
-    def __init__(self, x, y, *group, sprite="default.png", **kwargs):
+    def __init__(self, x, y, *group, sprite="default.png", kinematic=False, **kwargs):
         super().__init__(x, y, *group, sprite=sprite, **kwargs)
         self.falling_speed = 0
+        self.kinematic = kinematic
         self.is_move = False
 
     def update(self):
         super().update()
-        self.falling()
+        if not self.kinematic:
+            self.falling()
 
     def falling(self):
 
