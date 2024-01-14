@@ -25,9 +25,8 @@ class Bullet(GravityObject):
 
     def update(self):
         if self.is_visible:
-            print("update")
             self.physics_move(self.horizontal_speed, 0)
-            if self.check_ground_contact():
+            if self.ground_contact and self.check_ground_contact():
                 self.explosion()
             self.angle_bullet()
             super().update()
@@ -145,6 +144,20 @@ class RayCastBullet(Bullet):
         return None
 
 
+class GrenadeBullet(Bullet):
+    def __init__(self, x, y, *group, sprite="default.png", radius=25, ground_contact=False, **kwargs):
+        super().__init__(x, y, *group, sprite=sprite, radius=radius, ground_contact=ground_contact,
+                         **kwargs)
+        print(self.kinematic)
+
+    def update(self):
+        if game_map.check_on_ground_around(self.rect):
+            game_map.get_tan_on_ground(self.rect)
+            pass
+            # print("grenade")
+        super().update()
+
+
 class Weapon(Object):
     def __init__(self, x, y, worm, bullet, *group, duration=True, sprite="default.png", pilot=(0, 0),
                  pilot_pixel=False, **kwargs):
@@ -210,5 +223,17 @@ weapons = {"bazooka": {"class": Weapon,
                        "bullet_info": {"class": RayCastBullet,
                                        "sprite": "transparent_image5x5.png",
                                        "radius": 15,
-                                       "ground_contact": True}}
+                                       "ground_contact": True}},
+           "grenade": {"class": Weapon,
+                       "duration": True,
+                       "sprite": "guns/grenade.png",
+                       "pilot": (0.5, 0.5),
+                       "pilot_pixel": False,
+                       "bullet_info": {"class": GrenadeBullet,
+                                       "sprite": "guns/grenade.png",
+                                       "radius": 20,
+                                       "pilot": [0.5, 0.5],
+                                       "pixel_pilot": False,
+                                       "kinematic": False,
+                                       "ground_contact": False}},
            }

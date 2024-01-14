@@ -7,7 +7,7 @@ import pygame
 import config
 from classes.player import Worm
 from classes.ui_models import WormMarker, ShootMarker
-from classes.weapon import Bullet, weapons
+from classes.weapon import weapons
 from map import game_map
 
 clock = pygame.time.Clock()
@@ -18,7 +18,7 @@ shoot_press_time = 0
 shoot = False
 pygame.init()
 
-cweapon = weapons["shotgun"]
+cweapon = weapons["grenade"]
 cbullet = cweapon["bullet_info"]
 camera_pos = pygame.Vector2(-1024, -576 * 2)
 start_pos = pygame.Vector2(0, 0)
@@ -48,8 +48,6 @@ worm_marker.set_worm(active_worm)
 shoot_marker = ShootMarker(10, 10, camera_pos, ui_pool, pilot=(0.5, 0.5))
 shoot_marker.set_worm(active_worm)
 cur_weapon = cweapon["class"](100, 100, active_worm, None, weapon_pool, **cweapon)
-# cur_weapon = Weapon(100, 100, active_worm, None, weapon_pool, duration=False, pilot=(0.5, 0.7), sprite="guns/bazooka.png")
-# bullet.is_visible = False
 
 while True:
     for event in pygame.event.get():
@@ -105,8 +103,7 @@ while True:
                 is_pressed[4] = False
                 if not shoot:
                     if active_worm.can_control and active_worm.state == "idle":
-                        weapon_pool.sprites()[0].set_bullet(
-                            Bullet(0, 0, bullet_pool, radius=30, pilot=(0.5, 1), sprite="bullet/bazooka.png"))
+                        cur_weapon.set_bullet(cbullet["class"](0, 0, bullet_pool, **cbullet))
                         active_worm.shoot(15 * (time.time() - shoot_press_time))
 
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -186,4 +183,3 @@ while True:
 
     clock.tick(config.fps)
     pygame.display.flip()
-    # pygame.display.update()

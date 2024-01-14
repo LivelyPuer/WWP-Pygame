@@ -76,8 +76,20 @@ class Map:
         return np.any(self.mask[rect.left:rect.right, rect.top:rect.bottom])
 
     def check_on_ground_around(self, rect: pygame.Rect) -> bool:
-        # print(self.mask[rect.left - 1:rect.right + 1, rect.top - 1:rect.bottom + 1])
         return np.any(self.mask[rect.left - 1:rect.right + 1, rect.top - 1:rect.bottom + 1])
+
+    def get_tan_on_ground(self, rect: pygame.Rect) -> int:
+        ground_slice = self.mask[rect.left - 1:rect.right + 1, rect.top - 1:rect.bottom + 1]
+        print(ground_slice)
+        compression_matrix = np.zeros((2, 2))
+        size = ground_slice.shape
+
+        compression_matrix[0][0] = np.sum(ground_slice[0:size[0] // 2, 0:size[1] // 2])
+        compression_matrix[0][1] = np.sum(ground_slice[size[0] // 2:size[0], 0:size[1] // 2])
+        compression_matrix[1][0] = np.sum(ground_slice[0:size[0] // 2, size[1] // 2:size[1]])
+        print(ground_slice[size[0] // 2:size[0], size[1] // 2:size[1]])
+        compression_matrix[1][1] = np.sum(ground_slice[size[0] // 2:size[0], size[1] // 2:size[1]])
+        print(compression_matrix)
 
     def check_block(self, x, y):
         return self.mask[x][y] == 1
